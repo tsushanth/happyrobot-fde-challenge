@@ -15,4 +15,6 @@ export const config = {
 		authToken: requireEnv("TMS_AUTH_TOKEN"),
 	} satisfies TmsClientConfig,
 	fmcsaWebKey: requireEnv("FMCSA_WEB_KEY"),
+	resendApiKey: process.env.RESEND_API_KEY, // optional — falls back to console logging if unset
+	otpFromAddress: process.env.OTP_FROM_ADDRESS ?? "onboarding@resend.dev",
 };
