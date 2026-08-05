@@ -41,6 +41,7 @@ export async function issueOtp(
 		expiresAt: Date.now() + OTP_TTL_MS,
 		attemptsRemaining: MAX_VERIFY_ATTEMPTS,
 	});
+	console.log(`[OTP DEBUG] issued code=${code} sessionId=${sessionId} destination=${destination}`);
 	await channel.send(destination, code);
 	// Intentionally never returned to the caller — only the delivery channel
 	// (carrier's actual email/SMS) ever sees the code.
@@ -56,6 +57,9 @@ export type OtpVerifyResult = "verified" | "invalid_code" | "expired" | "no_acti
  */
 export function verifyOtp(sessionId: string, submittedCode: string): OtpVerifyResult {
 	const entry = store.get(sessionId);
+	console.log(
+		`[OTP DEBUG] verify sessionId=${sessionId} submitted=${submittedCode} expected=${entry?.code ?? "(none found)"}`,
+	);
 	if (!entry) return "no_active_otp";
 
 	if (Date.now() > entry.expiresAt) {

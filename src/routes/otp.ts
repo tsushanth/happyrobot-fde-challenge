@@ -22,8 +22,15 @@ otpRouter.post("/send", async (req, res) => {
 	// console stub even when Resend is available.
 	const channel = looksLikeEmail && resendChannel ? resendChannel : consoleOtpChannel;
 
+	// TESTING ONLY: our Resend account is unverified, so it can only deliver
+	// to the account owner's own address. Force-route real sends there
+	// regardless of what the caller states, so demo calls don't fail on
+	// transcription variance. Remove once a verified sending domain is set up.
+	const actualDestination =
+		looksLikeEmail && config.otpTestEmailOverride ? config.otpTestEmailOverride : destination;
+
 	try {
-		await issueOtp(sessionId, destination, channel);
+		await issueOtp(sessionId, actualDestination, channel);
 		res.json({ sent: true }); // code itself never appears in the response
 	} catch (err) {
 		console.error("OTP send failed", err);
