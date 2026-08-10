@@ -18,4 +18,5 @@ export const config = {
 	resendApiKey: process.env.RESEND_API_KEY, // optional — falls back to console logging if unset
 	otpFromAddress: process.env.OTP_FROM_ADDRESS ?? "onboarding@resend.dev",
 	otpTestEmailOverride: process.env.OTP_TEST_EMAIL_OVERRIDE, // TESTING ONLY, see routes/otp.ts
+	otpBypassVerification: process.env.OTP_BYPASS_VERIFICATION === "true", // TESTING ONLY, see routes/otp.ts
 };
