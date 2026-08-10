@@ -13,7 +13,12 @@ const searchSchema = z.object({
 	destState: z.string().optional(),
 	destZip: z.string().optional(),
 	eqtype: z.string().optional(),
-	maxResults: z.coerce.number().int().positive().max(20).optional(),
+	// Optional numeric fields sometimes arrive as "" rather than being omitted
+	// entirely — treat empty string as "not provided" rather than coercing to 0.
+	maxResults: z.preprocess(
+		(val) => (val === "" || val == null ? undefined : val),
+		z.coerce.number().int().positive().max(20).optional(),
+	),
 });
 
 loadsRouter.post("/search", async (req, res) => {
