@@ -10,13 +10,29 @@ const resendChannel = config.resendApiKey
 	? createResendOtpChannel(config.resendApiKey, config.otpFromAddress)
 	: null;
 
-const sendSchema = z.object({ sessionId: z.string().min(1), destination: z.string().min(1) });
+// The platform's tool-calling layer doesn't reliably bind a per-call session
+// identifier (same root cause documented in negotiation/session-store.ts).
+// Rather than trust whatever arrives, collapse anything that isn't a plain,
+// short, real-looking value (missing, empty, or a stray unresolved template
+// like "verify_otp.mcNumber") down to one shared testing key, so send/verify
+// always agree. Safe under the same one-call-at-a-time assumption as
+// negotiation. Revisit once the platform binding is fixed upstream.
+const FALLBACK_SESSION_KEY = "GLOBAL";
+function sanitizeSessionKey(raw: string | undefined): string {
+	if (!raw || raw.length === 0 || raw.length > 40 || raw.includes(".") || raw.includes("@")) {
+		return FALLBACK_SESSION_KEY;
+	}
+	return raw;
+}
+
+const sendSchema = z.object({ sessionId: z.string().optional(), destination: z.string().min(1) });
 
 otpRouter.post("/send", async (req, res) => {
 	const parsed = sendSchema.safeParse(req.body);
-	if (!parsed.success) return res.status(400).json({ error: "sessionId and destination are required" });
+	if (!parsed.success) return res.status(400).json({ error: "destination is required" });
 
-	const { sessionId, destination } = parsed.data;
+	const sessionId = sanitizeSessionKey(parsed.data.sessionId);
+	const { destination } = parsed.data;
 	const looksLikeEmail = destination.includes("@");
 	// No SMS provider configured — phone-shaped destinations still use the
 	// console stub even when Resend is available.
@@ -38,22 +54,13 @@ otpRouter.post("/send", async (req, res) => {
 	}
 });
 
-const verifySchema = z.object({ sessionId: z.string().min(1), code: z.string().min(1) });
+const verifySchema = z.object({ sessionId: z.string().optional(), code: z.string().min(1) });
 
 otpRouter.post("/verify", (req, res) => {
 	const parsed = verifySchema.safeParse(req.body);
-	if (!parsed.success) return res.status(400).json({ error: "sessionId and code are required" });
+	if (!parsed.success) return res.status(400).json({ error: "code is required" });
 
-	// TESTING ONLY — unblocks exercising the rest of the call flow (search,
-	// negotiation, booking) while the platform's variable-binding issue on
-	// send_otp/verify_otp is still being fixed upstream. The brief requires
-	// OTP to resist bypass under any framing, so this MUST be off before the
-	// real submission — gated behind an env var for exactly that reason.
-	if (config.otpBypassVerification) {
-		console.warn("[OTP] BYPASS ACTIVE — auto-verifying, testing only");
-		return res.json({ result: "verified", verified: true });
-	}
-
-	const result = verifyOtp(parsed.data.sessionId, parsed.data.code);
+	const sessionId = sanitizeSessionKey(parsed.data.sessionId);
+	const result = verifyOtp(sessionId, parsed.data.code);
 	res.json({ result, verified: result === "verified" });
 });
