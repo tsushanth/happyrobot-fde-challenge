@@ -108,11 +108,28 @@ negotiation as failed; the workflow is expected to close professionally and **no
 ## What's intentionally out of scope / mocked
 
 - **Senior rep handoff** — mocked per the brief; no live transfer target exists in this environment.
-- **OTP delivery channel** — logs to console in this environment rather than sending real email/SMS,
-  since no provider credentials were issued for the challenge. The `OtpChannel` interface is the
-  production contract; swapping in Twilio/SendGrid is a config change, not a code change.
+- **SMS OTP delivery** — email delivery is real (via Resend); SMS falls back to a console-log stub since
+  no SMS provider credentials were issued. Same `OtpChannel` interface either way — adding a real SMS
+  provider is a config change, not a code change.
 - **Primary call-activity audit trail** — per the brief, this should be HappyRobot-native (Twin). The
   `GET /log` endpoint here is a backend-owned backstop for local debugging, not a replacement.
+
+## Known limitation: per-call session correlation
+
+`negotiation/start`, `negotiation/respond`, `otp/send`, and `otp/verify` all need to correlate calls
+made at different points in the same phone call (e.g. the code sent in `otp/send` has to match what
+`otp/verify` checks against). The natural mechanism is a call/session identifier passed through from
+the platform — but the workflow builder's variable binding for a freshly-renamed tool parameter proved
+unreliable in testing (a rebound reference intermittently resolved to a stale value or an unresolved
+template string rather than the live call ID).
+
+Rather than ship on a binding that failed silently and intermittently, both areas fall back to
+single-active-session tracking server-side: negotiation state is a singleton, and OTP session keys are
+sanitized to a shared fallback key when the incoming value looks unresolved (empty, or containing `.`/`@`
+characters characteristic of a stray template reference). This is correct as long as one call is active
+at a time, which holds for this environment. A concurrent-call production deployment would need the
+platform's call-ID binding fixed upstream (or a differently-shaped tool schema that doesn't require
+renaming parameters mid-build) plus Redis instead of the in-memory store.
 
 ## Deployment
 
