@@ -6,6 +6,7 @@ ceiling, and idempotent booking.
 
 ## Links
 
+- **Walkthrough video**: https://youtu.be/thWnRjpNraM
 - **Live backend**: https://happyrobot-fde-challenge.fly.dev
 - **HappyRobot workflow**: https://platform.happyrobot.ai/deployments/ahngbereeshr
 - **Build description** (architecture, design decisions, known limitations): [docs/BUILD_DESCRIPTION.md](docs/BUILD_DESCRIPTION.md)
