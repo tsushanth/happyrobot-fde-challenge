@@ -9,7 +9,7 @@ export const bookingRouter = Router();
 const bookSchema = z.object({
 	loadId: z.string().min(1),
 	mcNumber: z.string().min(1),
-	agreedRate: z.number().positive(),
+	agreedRate: z.coerce.number().positive(),
 });
 
 bookingRouter.post("/confirm", async (req, res) => {

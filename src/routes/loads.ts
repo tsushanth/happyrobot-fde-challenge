@@ -13,7 +13,7 @@ const searchSchema = z.object({
 	destState: z.string().optional(),
 	destZip: z.string().optional(),
 	eqtype: z.string().optional(),
-	maxResults: z.number().int().positive().max(20).optional(),
+	maxResults: z.coerce.number().int().positive().max(20).optional(),
 });
 
 loadsRouter.post("/search", async (req, res) => {

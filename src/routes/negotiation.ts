@@ -35,7 +35,7 @@ negotiationRouter.post("/start", async (req, res) => {
 
 const respondSchema = z.object({
 	sessionId: z.string().min(1),
-	carrierAsk: z.number().positive(),
+	carrierAsk: z.coerce.number().positive(),
 });
 
 negotiationRouter.post("/respond", (req, res) => {
