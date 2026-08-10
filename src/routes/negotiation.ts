@@ -7,11 +7,13 @@ import { getLoad } from "../tms/operations.js";
 
 export const negotiationRouter = Router();
 
-const startSchema = z.object({ sessionId: z.string().min(1), loadId: z.string().min(1) });
+// sessionId is accepted for API compatibility but not required — see
+// negotiation/session-store.ts for why (platform variable-binding issue).
+const startSchema = z.object({ sessionId: z.string().optional(), loadId: z.string().min(1) });
 
 negotiationRouter.post("/start", async (req, res) => {
 	const parsed = startSchema.safeParse(req.body);
-	if (!parsed.success) return res.status(400).json({ error: "sessionId and loadId are required" });
+	if (!parsed.success) return res.status(400).json({ error: "loadId is required" });
 
 	try {
 		const record = await getLoad(config.tms, parsed.data.loadId);
@@ -34,13 +36,13 @@ negotiationRouter.post("/start", async (req, res) => {
 });
 
 const respondSchema = z.object({
-	sessionId: z.string().min(1),
+	sessionId: z.string().optional(),
 	carrierAsk: z.coerce.number().positive(),
 });
 
 negotiationRouter.post("/respond", (req, res) => {
 	const parsed = respondSchema.safeParse(req.body);
-	if (!parsed.success) return res.status(400).json({ error: "sessionId and a positive carrierAsk are required" });
+	if (!parsed.success) return res.status(400).json({ error: "a positive carrierAsk is required" });
 
 	const session = getSession(parsed.data.sessionId);
 	if (!session) return res.status(404).json({ error: "no_active_negotiation" });
